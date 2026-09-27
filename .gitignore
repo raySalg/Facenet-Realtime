@@ -1,0 +1,28 @@
+# Ambientes Virtuais Python
+.venv/
+env/
+venv/
+ENV/
+
+# Bytecode e Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Dados biométricos locais e fotos pessoais (Preservação de Privacidade)
+dataset/*
+!dataset/.gitkeep
+data/*.pt
+data/*.jpg
+data/*.png
+!data/graficos/
+!data/graficos/*
+
+# IDEs e Sistema Operacional
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
