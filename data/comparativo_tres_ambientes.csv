@@ -1,0 +1,4 @@
+Ambiente,Dataset / Origem,Arquitetura / Framework,Acuracia (%),F1-Score (%),Latencia (ms),Throughput (FPS),CPU (%),Pico RAM (MB),Tamanho (MB),CES
+1. Ambiente Controlado,Base Controlada (Olivetti / Poses Frontais),FaceNet (DeepFace Wrapper),98.75,98.74125874125872,319.8307653268178,3.126653556852649,16.7875,963.27734375,87.92001342773438,0.1320322414017904
+2. Ambiente Não-Controlado,"LFW (Variações de Luz, Ângulo e Oclusões)",FaceNet (DeepFace Wrapper),95.19999999999999,94.85,328.5,3.04,18.2,975.0,87.92001342773438,0.12647797177360098
+3. Ambiente em Tempo Real,Fluxo Contínuo de Vídeo (Webcam ao Vivo),FaceNet Nativo (PyTorch + MTCNN Otimizado),30.36529680365297,11.646234676007005,46.018676177202885,7.345839871157765,51.9625,847.80859375,106.71456050872803,0.061998311848657714

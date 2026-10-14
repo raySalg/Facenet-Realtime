@@ -17,36 +17,66 @@ def draw_hud(
     device_name: str,
     total_registered: int,
     paused: bool = False,
+    telemetry: Optional[dict] = None,
+    show_telemetry: bool = True,
 ) -> np.ndarray:
     """
     Desenha os elementos de interface sobre o frame:
     - Bounding boxes com cantos estilizados (Corner Brackets HUD)
     - Badges com nome e porcentagem de confiança
-    - Barra de status superior com FPS, Dispositivo e Atalhos
+    - Barra de status superior com FPS, Dispositivo, CPU, RAM e Latência
+    - Banner de avaliação de teste do TCC (quando ativo)
     """
     canvas = frame.copy()
     h, w = canvas.shape[:2]
 
     # 1. Desenhar a barra superior semi-transparente (Dashboard)
     overlay = canvas.copy()
-    cv2.rectangle(overlay, (0, 0), (w, 42), config.COLOR_BG_DARK, -1)
-    # Mescla com 75% de opacidade
+    bar_height = 42
+    cv2.rectangle(overlay, (0, 0), (w, bar_height), config.COLOR_BG_DARK, -1)
     cv2.addWeighted(overlay, 0.75, canvas, 0.25, 0, canvas)
 
     # Informações da barra superior
     fps_text = f"FPS: {fps:4.1f}"
-    device_text = f"Device: {device_name.upper()}"
-    registered_text = f"Cadastrados: {total_registered}"
-    controls_text = "[Q] Sair  |  [C] Cadastrar  |  [R] Recarregar"
-
     cv2.putText(canvas, "FACENET AI", (14, 26), cv2.FONT_HERSHEY_DUPLEX, 0.65, config.COLOR_PRIMARY, 2, cv2.LINE_AA)
-    cv2.putText(canvas, fps_text, (150, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.55, config.COLOR_TEXT, 1, cv2.LINE_AA)
-    cv2.putText(canvas, device_text, (260, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.55, config.COLOR_TEXT, 1, cv2.LINE_AA)
-    cv2.putText(canvas, registered_text, (410, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.55, config.COLOR_TEXT, 1, cv2.LINE_AA)
+    cv2.putText(canvas, fps_text, (150, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.50, config.COLOR_TEXT, 1, cv2.LINE_AA)
 
-    # Atalhos alinhados à direita
-    (cw, _), _ = cv2.getTextSize(controls_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
-    cv2.putText(canvas, controls_text, (max(10, w - cw - 14), 26), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (180, 180, 180), 1, cv2.LINE_AA)
+    # Telemetria de Hardware (se habilitada)
+    offset_x = 245
+    if show_telemetry and telemetry:
+        lat_text = f"Lat: {telemetry.get('lat_total_ms', 0.0):.0f}ms"
+        cpu_text = f"CPU: {telemetry.get('cpu_percent', 0.0):.1f}%"
+        ram_text = f"RAM: {telemetry.get('peak_ram_mb', 0.0):.0f}MB"
+
+        cv2.putText(canvas, lat_text, (offset_x, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.50, (120, 255, 120), 1, cv2.LINE_AA)
+        cv2.putText(canvas, cpu_text, (offset_x + 95, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.50, (100, 200, 255), 1, cv2.LINE_AA)
+        cv2.putText(canvas, ram_text, (offset_x + 195, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.50, (255, 180, 100), 1, cv2.LINE_AA)
+        offset_x += 300
+    else:
+        device_text = f"Device: {device_name.upper()}"
+        registered_text = f"Cadastrados: {total_registered}"
+        cv2.putText(canvas, device_text, (offset_x, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.50, config.COLOR_TEXT, 1, cv2.LINE_AA)
+        cv2.putText(canvas, registered_text, (offset_x + 150, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.50, config.COLOR_TEXT, 1, cv2.LINE_AA)
+        offset_x += 280
+
+    # Atalhos na barra superior
+    controls_text = "[Q] Sair & Salvar | [T] Teste TCC | [C] Cadastrar"
+    (cw, _), _ = cv2.getTextSize(controls_text, cv2.FONT_HERSHEY_SIMPLEX, 0.42, 1)
+    cv2.putText(canvas, controls_text, (max(10, w - cw - 12), 26), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (180, 180, 180), 1, cv2.LINE_AA)
+
+    # 1.1 Banner de Avaliação do TCC (Ground Truth Ativo)
+    if telemetry and telemetry.get("test_mode"):
+        subj = telemetry.get("test_subject", "Desconhecido")
+        acc = telemetry.get("accuracy", 0.0) * 100.0
+        f1 = telemetry.get("f1_macro", 0.0)
+        n_samples = telemetry.get("samples_count", 0)
+        ces = telemetry.get("ces", 0.0)
+
+        banner_text = f"[TESTE TCC ATIVO] Alvo: {subj} | Acuracia: {acc:.1f}% | F1: {f1:.3f} | N: {n_samples} | CES: {ces:.3f}"
+        b_overlay = canvas.copy()
+        cv2.rectangle(b_overlay, (0, 42), (w, 68), (15, 60, 20), -1)
+        cv2.addWeighted(b_overlay, 0.85, canvas, 0.15, 0, canvas)
+        cv2.putText(canvas, banner_text, (14, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (150, 255, 150), 1, cv2.LINE_AA)
 
     # 2. Desenhar as detecções faciais
     for det in detections:

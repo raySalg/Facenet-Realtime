@@ -81,118 +81,82 @@ def run_facenet_benchmark_on_dataset() -> Dict[str, float]:
 def get_comparative_models_data(facenet_real: Dict[str, float]) -> Dict[str, Dict[str, float]]:
     """
     Consolida os dados comparativos entre as arquiteturas clássicas e modernas
-    avaliadas no benchmark da pesquisa.
+    avaliadas no benchmark da pesquisa, unindo os modelos avaliados na base estática
+    com o FaceNet no ambiente de Tempo Real.
     """
-    # 1. FaceNet (Medido localmente na máquina do usuário)
-    facenet_metrics = facenet_real.copy()
-    facenet_ces = calculate_ces(
-        facenet_metrics["acuracia"],
-        facenet_metrics["f1_macro"],
-        facenet_metrics["latencia_ms"],
-        facenet_metrics["ram_mb"],
-        facenet_metrics["tamanho_mb"],
-        facenet_metrics["cpu_percent"],
+    # 1. FaceNet em Tempo Real (Medido localmente na máquina do usuário)
+    facenet_rt = facenet_real.copy()
+    ces_rt = calculate_ces(
+        facenet_rt["acuracia"],
+        facenet_rt["f1_macro"],
+        facenet_rt["latencia_ms"],
+        facenet_rt["ram_mb"],
+        facenet_rt["tamanho_mb"],
+        facenet_rt["cpu_percent"],
     )
-    facenet_metrics.update(facenet_ces)
+    facenet_rt.update(ces_rt)
 
-    # 2. Haar Cascade + LBPH (Modelo Clássico Histórico)
-    lbph_acc, lbph_f1 = 0.764, 0.742
-    lbph_lat = 2.1  # Muito rápido, porém sensível a luz e ângulo
-    lbph_metrics = {
-        "acuracia": lbph_acc,
-        "f1_macro": lbph_f1,
-        "latencia_ms": lbph_lat,
-        "throughput_fps": 1000.0 / lbph_lat,
-        "tamanho_mb": 4.5,
-        "ram_mb": 45.0,
-        "cpu_percent": 12.0,
-    }
-    lbph_metrics.update(
-        calculate_ces(
-            lbph_acc,
-            lbph_f1,
-            lbph_lat,
-            lbph_metrics["ram_mb"],
-            lbph_metrics["tamanho_mb"],
-            lbph_metrics["cpu_percent"],
-        )
-    )
+    # Verificar se o CSV do Benchmark de Modelos existe
+    bench_csv = Path(__file__).resolve().parent.parent / "Benchmark-de-Modelos-de-Reconhecimento-Facial" / "results" / "metrics_comparison.csv"
+    if bench_csv.exists():
+        try:
+            import pandas as pd
+            df = pd.read_csv(bench_csv)
+            results = {}
 
-    # 3. Eigenfaces (PCA + SVM)
-    pca_acc, pca_f1 = 0.698, 0.675
-    pca_lat = 1.4
-    pca_metrics = {
-        "acuracia": pca_acc,
-        "f1_macro": pca_f1,
-        "latencia_ms": pca_lat,
-        "throughput_fps": 1000.0 / pca_lat,
-        "tamanho_mb": 8.2,
-        "ram_mb": 60.0,
-        "cpu_percent": 10.0,
-    }
-    pca_metrics.update(
-        calculate_ces(
-            pca_acc,
-            pca_f1,
-            pca_lat,
-            pca_metrics["ram_mb"],
-            pca_metrics["tamanho_mb"],
-            pca_metrics["cpu_percent"],
-        )
-    )
+            for _, row in df.iterrows():
+                m_name = str(row["Model"])
+                acc = float(row["Accuracy"])
+                f1 = float(row["F1-Score"])
+                lat = float(row["Test Time per Img (ms)"])
+                fps = float(row["Throughput (FPS)"])
+                cpu = float(row["Avg CPU (%)"])
+                ram = float(row["Peak RAM (MB)"])
+                size = float(row["Model Size (MB)"])
 
-    # 4. HOG + SVM Linear (Dlib Clássico)
-    hog_acc, hog_f1 = 0.885, 0.871
-    hog_lat = 18.5
-    hog_metrics = {
-        "acuracia": hog_acc,
-        "f1_macro": hog_f1,
-        "latencia_ms": hog_lat,
-        "throughput_fps": 1000.0 / hog_lat,
-        "tamanho_mb": 28.0,
-        "ram_mb": 110.0,
-        "cpu_percent": 24.0,
-    }
-    hog_metrics.update(
-        calculate_ces(
-            hog_acc,
-            hog_f1,
-            hog_lat,
-            hog_metrics["ram_mb"],
-            hog_metrics["tamanho_mb"],
-            hog_metrics["cpu_percent"],
-        )
-    )
+                m_dict = {
+                    "acuracia": acc,
+                    "f1_macro": f1,
+                    "latencia_ms": lat,
+                    "throughput_fps": fps,
+                    "tamanho_mb": size,
+                    "ram_mb": ram,
+                    "cpu_percent": cpu,
+                }
+                m_dict.update(calculate_ces(acc, f1, lat, ram, size, cpu))
 
-    # 5. MobileFaceNet (CNN Leve / Edge)
-    mfn_acc, mfn_f1 = 0.941, 0.932
-    mfn_lat = 12.8
-    mfn_metrics = {
-        "acuracia": mfn_acc,
-        "f1_macro": mfn_f1,
-        "latencia_ms": mfn_lat,
-        "throughput_fps": 1000.0 / mfn_lat,
-        "tamanho_mb": 18.5,
-        "ram_mb": 95.0,
-        "cpu_percent": 28.0,
-    }
-    mfn_metrics.update(
-        calculate_ces(
-            mfn_acc,
-            mfn_f1,
-            mfn_lat,
-            mfn_metrics["ram_mb"],
-            mfn_metrics["tamanho_mb"],
-            mfn_metrics["cpu_percent"],
-        )
-    )
+                display_name = f"{m_name} (Controlado)" if "Facenet" in m_name else m_name
+                results[display_name] = m_dict
+
+            # Adicionar FaceNet em Tempo Real
+            results["FaceNet (Tempo Real)"] = facenet_rt
+            return results
+        except Exception as e:
+            print(f"[Benchmark] Falha ao ler CSV prévio ({e}), utilizando dados compilados.")
+
+    # Fallback caso o CSV não esteja disponível
+    pca_acc, pca_f1, pca_lat = 0.279, 0.269, 0.68
+    pca_metrics = {"acuracia": pca_acc, "f1_macro": pca_f1, "latencia_ms": pca_lat, "throughput_fps": 1000.0/pca_lat, "tamanho_mb": 2.88, "ram_mb": 732.6, "cpu_percent": 81.4}
+    pca_metrics.update(calculate_ces(pca_acc, pca_f1, pca_lat, 732.6, 2.88, 81.4))
+
+    fisher_acc, fisher_f1, fisher_lat = 0.379, 0.373, 0.92
+    fisher_metrics = {"acuracia": fisher_acc, "f1_macro": fisher_f1, "latencia_ms": fisher_lat, "throughput_fps": 1000.0/fisher_lat, "tamanho_mb": 7.93, "ram_mb": 753.1, "cpu_percent": 86.1}
+    fisher_metrics.update(calculate_ces(fisher_acc, fisher_f1, fisher_lat, 753.1, 7.93, 86.1))
+
+    of_acc, of_f1, of_lat = 0.429, 0.418, 113.6
+    of_metrics = {"acuracia": of_acc, "f1_macro": of_f1, "latencia_ms": of_lat, "throughput_fps": 1000.0/of_lat, "tamanho_mb": 14.6, "ram_mb": 769.5, "cpu_percent": 13.9}
+    of_metrics.update(calculate_ces(of_acc, of_f1, of_lat, 769.5, 14.6, 13.9))
+
+    vgg_acc, vgg_f1, vgg_lat = 0.958, 0.956, 272.8
+    vgg_metrics = {"acuracia": vgg_acc, "f1_macro": vgg_f1, "latencia_ms": vgg_lat, "throughput_fps": 1000.0/vgg_lat, "tamanho_mb": 553.2, "ram_mb": 2278.8, "cpu_percent": 55.7}
+    vgg_metrics.update(calculate_ces(vgg_acc, vgg_f1, vgg_lat, 2278.8, 553.2, 55.7))
 
     return {
-        "Eigenfaces (PCA)": pca_metrics,
-        "LBPH (Haar Cascade)": lbph_metrics,
-        "HOG + SVM Linear": hog_metrics,
-        "MobileFaceNet": mfn_metrics,
-        "FaceNet (Inception-ResNet)": facenet_metrics,
+        "Eigenfaces": pca_metrics,
+        "Fisherfaces": fisher_metrics,
+        "OpenFace": of_metrics,
+        "VGG-Face": vgg_metrics,
+        "FaceNet (Tempo Real)": facenet_rt,
     }
 
 
@@ -206,8 +170,10 @@ def generate_benchmark_charts(data: Dict[str, Dict[str, float]], output_dir: Pat
     plt.rcParams["axes.edgecolor"] = "#cccccc"
     plt.rcParams["axes.linewidth"] = 0.8
 
-    # Cores harmoniosas (destacando o FaceNet)
-    palette = ["#90a4ae", "#78909c", "#4db6ac", "#4fc3f7", "#2e7d32"]
+    # Cores harmoniosas (destacando o FaceNet em Tempo Real)
+    base_colors = ["#90a4ae", "#78909c", "#5c6bc0", "#4db6ac", "#4fc3f7", "#ab47bc"]
+    palette = [base_colors[i % len(base_colors)] for i in range(len(models))]
+    palette[-1] = "#2e7d32"
 
     # =========================================================================
     # GRÁFICO 1: Score Combinado de Eficiência (CES) e Eficácia vs Custo
@@ -329,14 +295,15 @@ def generate_benchmark_charts(data: Dict[str, Dict[str, float]], output_dir: Pat
         scatter_size = (ces ** 1.8) * 900
         ax_d.scatter(lat, acc, s=scatter_size, color=palette[i], alpha=0.85, edgecolors="#222222", linewidth=1.2, zorder=3)
         # Posicionamento inteligente dos rótulos
-        offset_x = 1.15 if i != 4 else 0.70
-        offset_y = 0.5 if i != 4 else -1.2
+        is_last = (i == len(models) - 1)
+        offset_x = 0.65 if is_last else 1.15
+        offset_y = -1.8 if is_last else 0.5
         ax_d.text(lat * offset_x, acc + offset_y, m.split()[0], fontsize=8.5, fontweight="bold")
 
     ax_d.set_xscale("log")
     ax_d.set_xlabel("Latência em Escala Logarítmica (ms)", fontsize=10)
     ax_d.set_ylabel("Acurácia (%)", fontsize=10)
-    ax_d.set_ylim(60, 103)
+    ax_d.set_ylim(20, 105)
     ax_d.grid(True, linestyle="--", alpha=0.5, zorder=0)
 
     plt.tight_layout()

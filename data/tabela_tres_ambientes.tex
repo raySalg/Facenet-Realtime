@@ -1,0 +1,17 @@
+% Tabela LaTeX - Triangulação dos Três Ambientes
+\begin{table*}[htbp]
+\centering
+\caption{Triangulação Experimental do Modelo FaceNet nos Três Ambientes de Avaliação}
+\label{tab:triangulacao_ambientes}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{llrrrrrrr}
+\hline
+\textbf{Ambiente Avaliado} & \textbf{Condição / Origem} & \textbf{Acurácia (\%)} & \textbf{F1-Score (\%)} & \textbf{Latência (ms)} & \textbf{Vazão (FPS)} & \textbf{CPU (\%)} & \textbf{RAM (MB)} & \textbf{CES} \\
+\hline
+1. Ambiente Controlado & Base Controlada (Olivetti / Poses Frontais) & 98.75\% & 98.74\% & 319.83 & 3.13 & 16.79\% & 963.28 & \textbf{0.1320} \\
+2. Ambiente Não-Controlado & LFW (Variações de Luz, Ângulo e Oclusões) & 95.20\% & 94.85\% & 328.50 & 3.04 & 18.20\% & 975.00 & \textbf{0.1265} \\
+3. Ambiente em Tempo Real & Fluxo Contínuo de Vídeo (Webcam ao Vivo) & 30.37\% & 11.65\% & 46.02 & 7.35 & 51.96\% & 847.81 & \textbf{0.0620} \\
+\hline
+\end{tabular}
+}
+\end{table*}

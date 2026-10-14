@@ -1,0 +1,23 @@
+% Tabela LaTeX - FaceNet em Tempo Real
+\begin{table}[htbp]
+\centering
+\caption{Métricas Experimentais do FaceNet em Tempo Real (Webcam Streaming)}
+\label{tab:facenet_tempo_real}
+\begin{tabular}{lr}
+\hline
+\textbf{Métrica Computacional / Eficácia} & \textbf{Valor Medido} \\
+\hline
+Acurácia Global & 30.37\% \\
+F1-Score (Macro) & 11.65\% \\
+Latência Média por Frame & 46.02 ms \\
+Latência MTCNN (Detecção/Alinhamento) & 24.86 ms \\
+Latência FaceNet (Extração de Embeddings) & 21.09 ms \\
+Vazão Efetiva (Throughput) & 7.35 FPS \\
+Uso Médio de CPU (Normalizado) & 51.96\% \\
+Trabalho de CPU (CPU Work) & 65.43 \%-s \\
+Pico de Memória RAM & 847.81 MB \\
+Tamanho Físico do Modelo & 106.7 MB \\
+Score Combinado de Eficiência (CES) & \textbf{0.0620} \\
+\hline
+\end{tabular}
+\end{table}

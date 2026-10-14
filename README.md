@@ -170,11 +170,41 @@ Com a janela de vídeo aberta, você pode interagir utilizando o teclado:
 
 | Tecla | Função |
 | :---: | :--- |
-| **`Q`** ou **`ESC`** | Encerra a aplicação e fecha as câmeras. |
+| **`Q`** ou **`ESC`** | **Encerra a aplicação e salva automaticamente todos os relatórios e gráficos do TCC**. |
+| **`T`** | Ativa ou altera o **Modo de Teste TCC** (define o sujeito Ground Truth ativo para medir Acurácia e F1 ao vivo). |
+| **`M`** | **Salva imediatamente os relatórios** e gráficos do TCC em `data/` sem interromper a execução. |
+| **`H`** | Alterna a exibição detalhada de **telemetria no topo** (Latência MTCNN/FaceNet, CPU %, RAM MB). |
 | **`C`** | Pausa o vídeo para **cadastrar uma nova pessoa** imediatamente. |
 | **`R`** | **Recarrega o banco de dados** de rostos (se tiver adicionado fotos na pasta `dataset/`). |
 | **`S`** | Tira uma **captura de tela** (screenshot) com as marcações e salva na pasta `data/`. |
 | **`Espaço`** | **Pausa / Retoma** o fluxo de vídeo. |
+
+---
+
+## 📊 Geração de Métricas e Triangulação dos Três Ambientes (TCC)
+
+A aplicação integra um motor de telemetria científica que contrasta os resultados com o benchmark anterior:
+
+### 1. Executar com Avaliação em Tempo Real Direta:
+```bash
+# Executa identificando e calculando Acurácia e F1 para a pessoa na câmera
+python main.py --test "Rayssa"
+```
+
+### 2. Benchmark Automatizado Cronometrado:
+```bash
+# Executa coleta rigorosa por 15 segundos e gera tabelas para o Overleaf/artigo
+python benchmark_tempo_real.py --duration 15 --ground-truth "Rayssa"
+```
+
+### 3. Artefatos Gerados Automaticamente em `data/`:
+* **`comparativo_tres_ambientes.md`**: Tabela comparativa consolidando **Ambiente Controlado**, **Ambiente Não-Controlado (LFW)** e **Tempo Real**.
+* **`comparativo_tres_ambientes.csv`**: Dados tabulados em CSV.
+* **`tabela_tres_ambientes.tex`**: Tabela formatada em LaTeX pronta para inclusão no artigo.
+* **`metricas_tempo_real.md`** & **`tabela_tempo_real.tex`**: Relatório aprofundado com decomposição de latência (MTCNN vs FaceNet).
+* **`telemetria_tempo_real.csv`**: Série temporal segundo a segundo de FPS, latências, CPU e RAM.
+* **`graficos/grafico_triangulacao_ambientes.png`**: Gráfico comparativo dos 3 ambientes em 300 DPI.
+* **`graficos/grafico_telemetria_tempo_real.png`**: Painel com evolução de FPS, latência, CPU e RAM ao vivo.
 
 ---
 
@@ -186,17 +216,18 @@ Você pode personalizar o comportamento do reconhecimento passando argumentos pa
 python main.py [opções]
 ```
 
+- `--test <nome>` ou `--ground-truth <nome>`: Ativa a avaliação em tempo real calculando Acurácia e F1 contra o sujeito na câmera.
 - `--cam <indice>`: Especifica o índice da câmera (padrão: `0`). Útil caso use webcam USB externa (ex: `--cam 1`).
 - `--threshold <valor>`: Limiar de distância euclidiana para identificação (padrão: `0.85`).
-  - Valores menores (ex: `0.75`): Mais rigoroso (menos falsos positivos).
-  - Valores maiores (ex: `0.95`): Mais tolerante (aceita variações maiores de ângulo/óculos/iluminação).
 - `--metric <euclidean|cosine>`: Métrica de distância utilizada (`euclidean` por padrão ou `cosine`).
-- `--skip <n>`: Intervalo de frames para inferência de embeddings (padrão: `2`). Aumente se seu computador for mais modesto para manter alto FPS.
+- `--skip <n>`: Intervalo de frames para inferência de embeddings (padrão: `2`).
 - `--sync`: Sincroniza fotos da pasta `dataset/` antes de ligar a câmera.
+- `--benchmark-csv <caminho>`: Caminho alternativo para o CSV do benchmark prévio.
+- `--no-save`: Desativa o salvamento automático de relatórios ao sair.
 
-**Exemplo:**
+**Exemplo Completo:**
 ```bash
-python main.py --cam 0 --threshold 0.82 --skip 2
+python main.py --cam 0 --threshold 0.85 --test "Rayssa"
 ```
 
 ---
